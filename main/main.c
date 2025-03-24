@@ -3,8 +3,7 @@
  *
  * SPDX-License-Identifier: CC0-1.0
  */
-#if 1
-
+#if 0
 
 #include "waveshare_rgb_lcd_port.h"
 
@@ -49,12 +48,21 @@ void app_main()
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "driver/uart.h"
+#include "esp_task_wdt.h"
 
 #include "esp_event.h"
 #include <stdio.h>
 // #include <nvs.h>
 #include "esp_crc.h"
 #include <string.h> // 添加这一行
+// #include "waveshare_rgb_lcd_port.h"
+
+
+
+esp_err_t waveshare_esp32_s3_rgb_lcd_init();
+bool lvgl_port_lock(int timeout_ms);
+void lv_demo_widgets(void);
+void lvgl_port_unlock(void);
 
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
@@ -89,6 +97,7 @@ void uart_task(void *pvParameters)
     uint8_t tmpBuff[BUF_SIZE] = {0};
     while (1)
     {
+        memset(tmpBuff, 0, BUF_SIZE);
         int len = uart_read_bytes(UART_NUM, tmpBuff, BUF_SIZE, 20 / portTICK_PERIOD_MS);
         if (len > 0)
         {
@@ -108,7 +117,7 @@ void uart_task(void *pvParameters)
                 ESP_LOGE(TAG, "Unknown command: %s", tmpBuff);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(100)); // Yield the CPU for 100 milliseconds
+        vTaskDelay(pdMS_TO_TICKS(400)); // Yield the CPU for 100 milliseconds
     }
 }
 
@@ -188,7 +197,7 @@ void tcp_client(void)
             shutdown(sock, 0);
             close(sock);
         }
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
@@ -343,10 +352,12 @@ void print_wifi_info()
 // 连接 WiFi
 esp_err_t tutorial_connect(char *wifi_ssid, char *wifi_password)
 {
-     // 重新创建事件组
-     if (s_wifi_event_group == NULL) {
+    // 重新创建事件组
+    if (s_wifi_event_group == NULL)
+    {
         s_wifi_event_group = xEventGroupCreate();
-        if (s_wifi_event_group == NULL) {
+        if (s_wifi_event_group == NULL)
+        {
             ESP_LOGE(TAG, "Failed to create event group");
             return ESP_FAIL;
         }
@@ -574,7 +585,7 @@ void wifi_maintenance_task(void *pvParameters)
             {
             case ESP_ERR_WIFI_NOT_INIT:
                 ESP_LOGE(TAG, "Wi-Fi stack not initialized");
-                ESP_ERROR_CHECK(tutorial_init());   // 这里可以考虑重新初始化 Wi-Fi// 这里可以考虑重新初始化 Wi-Fi
+                ESP_ERROR_CHECK(tutorial_init()); // 这里可以考虑重新初始化 Wi-Fi// 这里可以考虑重新初始化 Wi-Fi
                 break;
             case ESP_ERR_WIFI_NOT_CONNECT:
                 ESP_LOGE(TAG, "Wi-Fi station is not connected");
@@ -615,6 +626,21 @@ void wifi_maintenance_task(void *pvParameters)
 // 主函数
 void app_main()
 {
+    // 配置任务看门狗定时器
+    esp_task_wdt_config_t config = {
+        .timeout_ms = 5000,                    // 超时时间为 5 秒
+        .idle_core_mask = (1 << 0) | (1 << 1), // 监控核心 0 和核心 1 的空闲任务
+        .trigger_panic = true                  // 超时触发系统崩溃异常
+    };
+
+    // 初始化任务看门狗定时器
+    esp_err_t err = esp_task_wdt_init(&config);
+    if (err != ESP_OK)
+    {
+        // 处理初始化失败的情况
+        ESP_LOGE("TWDT", "Failed to initialize Task Watchdog Timer, error code: %d", err);
+    }
+
     // Initialize Non-Volatile Storage (NVS)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -625,7 +651,7 @@ void app_main()
 
     // 读取配置数据
     ConfigData read_config_data;
-    esp_err_t err = read_config(&read_config_data);
+    err = read_config(&read_config_data);
     if (err != ESP_OK)
     {
         // 读取失败，写入默认配置
@@ -661,12 +687,28 @@ void app_main()
     ESP_ERROR_CHECK(tutorial_init());
     ESP_ERROR_CHECK(tutorial_connect((char *)WIFI_SSID, (char *)WIFI_PASSWORD));
 
+    waveshare_esp32_s3_rgb_lcd_init(); // Initialize the Waveshare ESP32-S3 RGB LCD 
+    // wavesahre_rgb_lcd_bl_on();  //Turn on the screen backlight 
+    // wavesahre_rgb_lcd_bl_off(); //Turn off the screen backlight 
+
+    ESP_LOGI(TAG, "Display LVGL demos");
+    // Lock the mutex due to the LVGL APIs are not thread-safe
+    if (lvgl_port_lock(-1)) {
+        // lv_demo_stress();
+        // lv_demo_benchmark();
+        // lv_demo_music();
+        lv_demo_widgets();
+        // example_lvgl_demo_ui();
+        // Release the mutex
+        lvgl_port_unlock();
+    }
+
     // 创建串口任务
-    xTaskCreate(uart_task, "uart_task", 2048, NULL, 1, NULL);
+    xTaskCreate(uart_task, "uart_task", 4096, NULL, 1, NULL);
     // 创建 Socket 任务
-    xTaskCreate(tcp_client, "tcp_client_task", 4096, NULL, 1, NULL);
+    xTaskCreate(tcp_client, "tcp_client_task", 8192, NULL, 1, NULL);
     // 创建Wi-Fi维护任务
-    xTaskCreate(wifi_maintenance_task, "wifi_maintenance_task", 4096, NULL, 1, NULL);
+    xTaskCreate(wifi_maintenance_task, "wifi_maintenance_task", 8192, NULL, 1, NULL);
 
     while (1)
     {
