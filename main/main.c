@@ -623,6 +623,19 @@ void wifi_maintenance_task(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(5000)); // 每 5 秒检查一次连接状态
     }
 }
+#include "gui_guider.h"
+#include "custom.h"
+#include "esp_timer.h" // Add this line
+
+#define LVGL_TICK_MS 1
+
+void lv_tick_task(void *arg)
+{
+    lv_tick_inc(LVGL_TICK_MS);
+}
+
+lv_ui guider_ui;
+
 // 主函数
 void app_main()
 {
@@ -710,10 +723,26 @@ void app_main()
     // 创建Wi-Fi维护任务
     xTaskCreate(wifi_maintenance_task, "wifi_maintenance_task", 8192, NULL, 1, NULL);
 
+    //调用生成的ui代码
+    const esp_timer_create_args_t periodic_timer_args = {
+        .callback = &lv_tick_task,
+        .name = "periodic_gui"};
+    esp_timer_handle_t periodic_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 1 * 1000));
+ 
+    
+    // lvgl demo演示
+    // lv_demo_music();
+    // lv_demo_stress();
+ 
+    setup_ui(&guider_ui);
+
     while (1)
     {
         // ESP_LOGI(TAG, "app_main is running");
-        vTaskDelay(pdMS_TO_TICKS(2000)); // 让出 CPU 2000 毫秒
+        vTaskDelay(pdMS_TO_TICKS(10)); // 让出 CPU 2000 毫秒
+        lv_task_handler();
     }
     ESP_ERROR_CHECK(tutorial_disconnect());
 
