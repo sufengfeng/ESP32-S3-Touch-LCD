@@ -18,6 +18,7 @@ extern "C" {
 
 void events_init(lv_ui *ui);
 
+void events_init_screen_welcom(lv_ui *ui);
 void events_init_screen_begin(lv_ui *ui);
 void events_init_screen_serving(lv_ui *ui);
 void events_init_screen_upload(lv_ui *ui);

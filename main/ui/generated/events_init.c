@@ -16,6 +16,56 @@
 #endif
 
 
+static void screen_welcom_btn_1_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        lv_label_set_text(guider_ui.screen_welcom_label_2, "hello");
+        lv_obj_set_style_text_font(guider_ui.screen_welcom_label_2, &lv_font_montserratMedium_12, 0);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_welcom_btn_2_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        lv_label_set_text(guider_ui.screen_welcom_label_2, "bye");
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_welcom_btn_3_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        ui_load_scr_animation(&guider_ui, &guider_ui.screen_begin, guider_ui.screen_begin_del, &guider_ui.screen_welcom_del, setup_scr_screen_begin, LV_SCR_LOAD_ANIM_NONE, 200, 200, true, true);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void events_init_screen_welcom (lv_ui *ui)
+{
+    lv_obj_add_event_cb(ui->screen_welcom_btn_1, screen_welcom_btn_1_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_welcom_btn_2, screen_welcom_btn_2_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_welcom_btn_3, screen_welcom_btn_3_event_handler, LV_EVENT_ALL, ui);
+}
+
 static void screen_begin_event_handler (lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -35,9 +85,24 @@ static void screen_begin_event_handler (lv_event_t *e)
     }
 }
 
+static void screen_begin_btn_1_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        ui_load_scr_animation(&guider_ui, &guider_ui.screen_welcom, guider_ui.screen_welcom_del, &guider_ui.screen_begin_del, setup_scr_screen_welcom, LV_SCR_LOAD_ANIM_NONE, 200, 200, true, true);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 void events_init_screen_begin (lv_ui *ui)
 {
     lv_obj_add_event_cb(ui->screen_begin, screen_begin_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_begin_btn_1, screen_begin_btn_1_event_handler, LV_EVENT_ALL, ui);
 }
 
 static void screen_serving_event_handler (lv_event_t *e)

@@ -27,7 +27,6 @@ void app_main()
 }
 #else
 
-
 /*
  * SPDX-FileCopyrightText: 2022 Espressif Systems (Shanghai) CO LTD
  *
@@ -56,8 +55,6 @@ void app_main()
 #include "esp_crc.h"
 #include <string.h> // 添加这一行
 // #include "waveshare_rgb_lcd_port.h"
-
-
 
 esp_err_t waveshare_esp32_s3_rgb_lcd_init();
 bool lvgl_port_lock(int timeout_ms);
@@ -625,34 +622,24 @@ void wifi_maintenance_task(void *pvParameters)
 }
 #include "gui_guider.h"
 #include "custom.h"
-#include "esp_timer.h" // Add this line
-
-#define LVGL_TICK_MS 1
-
-void lv_tick_task(void *arg)
-{
-    lv_tick_inc(LVGL_TICK_MS);
-}
-
 lv_ui guider_ui;
-
 // 主函数
 void app_main()
 {
-    // 配置任务看门狗定时器
-    esp_task_wdt_config_t config = {
-        .timeout_ms = 5000,                    // 超时时间为 5 秒
-        .idle_core_mask = (1 << 0) | (1 << 1), // 监控核心 0 和核心 1 的空闲任务
-        .trigger_panic = true                  // 超时触发系统崩溃异常
-    };
+    // // 配置任务看门狗定时器
+    // esp_task_wdt_config_t config = {
+    //     .timeout_ms = 5000,                    // 超时时间为 5 秒
+    //     .idle_core_mask = (1 << 0) | (1 << 1), // 监控核心 0 和核心 1 的空闲任务
+    //     .trigger_panic = true                  // 超时触发系统崩溃异常
+    // };
 
-    // 初始化任务看门狗定时器
-    esp_err_t err = esp_task_wdt_init(&config);
-    if (err != ESP_OK)
-    {
-        // 处理初始化失败的情况
-        ESP_LOGE("TWDT", "Failed to initialize Task Watchdog Timer, error code: %d", err);
-    }
+    // // 初始化任务看门狗定时器
+    // esp_err_t err = esp_task_wdt_init(&config);
+    // if (err != ESP_OK)
+    // {
+    //     // 处理初始化失败的情况
+    //     ESP_LOGE("TWDT", "Failed to initialize Task Watchdog Timer, error code: %d", err);
+    // }
 
     // Initialize Non-Volatile Storage (NVS)
     esp_err_t ret = nvs_flash_init();
@@ -661,93 +648,76 @@ void app_main()
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
-
-    // 读取配置数据
-    ConfigData read_config_data;
-    err = read_config(&read_config_data);
-    if (err != ESP_OK)
-    {
-        // 读取失败，写入默认配置
-        err = write_default_config();
-        if (err != ESP_OK)
-        {
-            return;
-        }
-        // 重新读取配置数据
+    /*
+        // 读取配置数据
+        ConfigData read_config_data;
         err = read_config(&read_config_data);
         if (err != ESP_OK)
         {
-            ESP_LOGE("NVS", "Error (%s) reading config after possible write!\n", esp_err_to_name(err));
-            return;
+            // 读取失败，写入默认配置
+            err = write_default_config();
+            if (err != ESP_OK)
+            {
+                return;
+            }
+            // 重新读取配置数据
+            err = read_config(&read_config_data);
+            if (err != ESP_OK)
+            {
+                ESP_LOGE("NVS", "Error (%s) reading config after possible write!\n", esp_err_to_name(err));
+                return;
+            }
         }
-    }
 
-    // 打印读取的配置数据
-    printConfigData(read_config_data);
+        // 打印读取的配置数据
+        printConfigData(read_config_data);
 
-    // 初始化 UART
-    uart_config_t uart_config = {
-        .baud_rate = 115200,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE};
-    uart_param_config(UART_NUM, &uart_config);
-    uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_driver_install(UART_NUM, BUF_SIZE * 2, 0, 0, NULL, 0);
+        // 初始化 UART
+        uart_config_t uart_config = {
+            .baud_rate = 115200,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE};
+        uart_param_config(UART_NUM, &uart_config);
+        uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        uart_driver_install(UART_NUM, BUF_SIZE * 2, 0, 0, NULL, 0);
 
-    // 初始化 WiFi
-    ESP_ERROR_CHECK(tutorial_init());
-    ESP_ERROR_CHECK(tutorial_connect((char *)WIFI_SSID, (char *)WIFI_PASSWORD));
+        // 初始化 WiFi
+        ESP_ERROR_CHECK(tutorial_init());
+        ESP_ERROR_CHECK(tutorial_connect((char *)WIFI_SSID, (char *)WIFI_PASSWORD));
 
-    waveshare_esp32_s3_rgb_lcd_init(); // Initialize the Waveshare ESP32-S3 RGB LCD 
-    // wavesahre_rgb_lcd_bl_on();  //Turn on the screen backlight 
-    // wavesahre_rgb_lcd_bl_off(); //Turn off the screen backlight 
 
+
+        // 创建串口任务
+        xTaskCreate(uart_task, "uart_task", 4096, NULL, 1, NULL);
+        // 创建 Socket 任务
+        xTaskCreate(tcp_client, "tcp_client_task", 8192, NULL, 1, NULL);
+        // 创建Wi-Fi维护任务
+        xTaskCreate(wifi_maintenance_task, "wifi_maintenance_task", 8192, NULL, 1, NULL);
+    */
+    waveshare_esp32_s3_rgb_lcd_init(); // Initialize the Waveshare ESP32-S3 RGB LCD
     ESP_LOGI(TAG, "Display LVGL demos");
     // Lock the mutex due to the LVGL APIs are not thread-safe
-    if (lvgl_port_lock(-1)) {
+    if (lvgl_port_lock(-1))
+    {
         // lv_demo_stress();
         // lv_demo_benchmark();
         // lv_demo_music();
-        lv_demo_widgets();
+        // lv_demo_widgets();
+        setup_ui(&guider_ui);
+        custom_init(&guider_ui);
         // example_lvgl_demo_ui();
         // Release the mutex
         lvgl_port_unlock();
     }
-
-    // 创建串口任务
-    xTaskCreate(uart_task, "uart_task", 4096, NULL, 1, NULL);
-    // 创建 Socket 任务
-    xTaskCreate(tcp_client, "tcp_client_task", 8192, NULL, 1, NULL);
-    // 创建Wi-Fi维护任务
-    xTaskCreate(wifi_maintenance_task, "wifi_maintenance_task", 8192, NULL, 1, NULL);
-
-    //调用生成的ui代码
-    const esp_timer_create_args_t periodic_timer_args = {
-        .callback = &lv_tick_task,
-        .name = "periodic_gui"};
-    esp_timer_handle_t periodic_timer;
-    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 1 * 1000));
- 
-    
-    // lvgl demo演示
-    // lv_demo_music();
-    // lv_demo_stress();
- 
-    setup_ui(&guider_ui);
-
     while (1)
     {
         // ESP_LOGI(TAG, "app_main is running");
         vTaskDelay(pdMS_TO_TICKS(10)); // 让出 CPU 2000 毫秒
-        lv_task_handler();
     }
     ESP_ERROR_CHECK(tutorial_disconnect());
-
     ESP_ERROR_CHECK(tutorial_deinit());
-
     ESP_LOGI(TAG, "End of tutorial...");
 }
 #endif

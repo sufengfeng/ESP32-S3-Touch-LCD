@@ -21,6 +21,15 @@ typedef struct
 	lv_obj_t *screen_welcom;
 	bool screen_welcom_del;
 	lv_obj_t *screen_welcom_label_1;
+	lv_obj_t *screen_welcom_btn_1;
+	lv_obj_t *screen_welcom_btn_1_label;
+	lv_obj_t *screen_welcom_btn_2;
+	lv_obj_t *screen_welcom_btn_2_label;
+	lv_obj_t *screen_welcom_label_2;
+	lv_obj_t *screen_welcom_btn_3;
+	lv_obj_t *screen_welcom_btn_3_label;
+	lv_obj_t *screen_welcom_btn_4;
+	lv_obj_t *screen_welcom_btn_4_label;
 	lv_obj_t *screen_begin;
 	bool screen_begin_del;
 	lv_obj_t *screen_begin_msgbox_1;
@@ -35,6 +44,8 @@ typedef struct
 	lv_obj_t *screen_begin_label_3;
 	lv_obj_t *screen_begin_btn_huanwei;
 	lv_obj_t *screen_begin_btn_huanwei_label;
+	lv_obj_t *screen_begin_btn_1;
+	lv_obj_t *screen_begin_btn_1_label;
 	lv_obj_t *screen_serving;
 	bool screen_serving_del;
 	lv_obj_t *screen_serving_msgbox_1;
@@ -99,9 +110,9 @@ void setup_scr_screen_sum(lv_ui *ui);
 
 LV_FONT_DECLARE(lv_font_simsun_40)
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
+LV_FONT_DECLARE(lv_font_montserratMedium_12)
 LV_FONT_DECLARE(lv_font_simsun_12)
 LV_FONT_DECLARE(lv_font_simsun_80)
-LV_FONT_DECLARE(lv_font_montserratMedium_12)
 LV_FONT_DECLARE(lv_font_simsun_60)
 LV_FONT_DECLARE(lv_font_simsun_48)
 LV_FONT_DECLARE(lv_font_simsun_16)
